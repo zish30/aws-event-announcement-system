@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Event Dashboard</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0; padding: 0;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
+      color: #fff;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      max-width: 1000px;
+      width: 100%;
+      padding: 20px;
+    }
+
+    form, .subscribers-box {
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #00ffff;
+    }
+
+    .form-group {
+      position: relative;
+      margin-top: 20px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #444;
+      border-radius: 6px;
+      font-size: 16px;
+      background-color: #111;
+      color: #fff;
+      outline: none;
+      appearance: none;
+    }
+
+    /* Fix for date picker icon */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      cursor: pointer;
+    }
+
+    label {
+      position: absolute;
+      top: 12px; left: 12px;
+      background: #1e1e1e;
+      padding: 0 5px;
+      font-size: 14px;
+      color: #aaa;
+      pointer-events: none;
+      transition: 0.2s ease;
+    }
+
+    input:focus + label,
+    input:not(:placeholder-shown) + label,
+    textarea:focus + label,
+    textarea:not(:placeholder-shown) + label {
+      top: -9px;
+      left: 10px;
+      font-size: 12px;
+      color: #00ffff;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #00ffff;
+      color: #111;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 25px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #0ff7ff;
+      box-shadow: 0 0 10px #00ffff;
+    }
+
+    .message {
+      text-align: center;
+      margin-top: 15px;
+      font-weight: 500;
+      font-size: 15px;
+      color: #0ff;
+    }
+
+    .subscribers-box {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .subscriber-item {
+      background: #2a2a2a;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 4px;
+      color: #ccc;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Event Form -->
+    <form id="eventForm">
+      <h2>Add New Event</h2>
+      <div class="form-group">
+        <input type="text" id="title" required placeholder=" ">
+        <label for="title">Event Title</label>
+      </div>
+      <div class="form-group">
+        <input type="date" id="date" required placeholder=" ">
+        <label for="date">Event Date</label>
+      </div>
+      <div class="form-group">
+        <textarea id="description" rows="4" required placeholder=" "></textarea>
+        <label for="description">Event Description</label>
+      </div>
+      <button type="submit">Submit Event</button>
+      <p class="message" id="responseMsg"></p>
+    </form>
+
+    <!-- Subscribe and View Subscribers -->
+    <div>
+      <form id="subscribeForm">
+        <h2>Subscribe for Notifications</h2>
+        <div class="form-group">
+          <input type="email" id="email" required placeholder=" ">
+          <label for="email">Your Email</label>
+        </div>
+        <button type="submit">Subscribe</button>
+        <p class="message" id="subMsg"></p>
+      </form>
+      
+      <div class="subscribers-box">
+        <h2>Subscribers</h2>
+        <button type="button" id="viewSubsBtn">View Subscribers</button>
+        <div id="subscribersList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "https://v8s2j94k27.execute-api.ap-south-1.amazonaws.com/prod";
+
+    // Event Form
+    const eventForm = document.getElementById('eventForm');
+    const responseMsg = document.getElementById('responseMsg');
+    eventForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value.trim();
+      const date = document.getElementById('date').value;
+      const description = document.getElementById('description').value.trim();
+      const eventData = { title, date, description };
+
+      try {
+        const res = await fetch(`${API_BASE}/create-event`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(eventData)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          responseMsg.style.color = "lime";
+          responseMsg.innerText = data.message || "Event added successfully!";
+          eventForm.reset();
+        } else {
+          responseMsg.style.color = "red";
+          responseMsg.innerText = data.error || "Something went wrong!";
+        }
+      } catch (err) {
+        responseMsg.style.color = "red";
+        responseMsg.innerText = "Failed to submit event!";
+      }
+    });
+
+    // Subscribe Form
+    const subscribeForm = document.getElementById('subscribeForm');
+    const subMsg = document.getElementById('subMsg');
+    subscribeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+
+      try {
+        const res = await fetch(`${API_BASE}/subscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          subMsg.style.color = "lime";
+          subMsg.innerText = data.message || "Subscription successful!";
+          subscribeForm.reset();
+        } else {
+          subMsg.style.color = "red";
+          subMsg.innerText = data.error || "Something went wrong!";
+        }
+      } catch (err) {
+        subMsg.style.color = "red";
+        subMsg.innerText = "Failed to subscribe!";
+      }
+    });
+
+    // View Subscribers
+    document.getElementById('viewSubsBtn').addEventListener('click', async () => {
+      const listBox = document.getElementById('subscribersList');
+      listBox.innerHTML = "Loading...";
+      try {
+        const res = await fetch(`${API_BASE}/get-subscribers`);
+        const data = await res.json();
+        if (res.ok) {
+          listBox.innerHTML = data.subscribers.length 
+            ? data.subscribers.map(s => `<div class="subscriber-item">${s}</div>`).join('')
+            : "No subscribers found.";
+        } else {
+          listBox.innerHTML = data.error || "Error fetching subscribers.";
+        }
+      } catch (err) {
+        listBox.innerHTML = "Failed to load subscribers!";
+      }
+    });
+  </script>
+</body>
+</html>
