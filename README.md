@@ -5,7 +5,7 @@ A serverless web application for creating events and notifying subscribers via e
 ---
 
 ## **Architecture Diagram**
-![Architecture](docs/architecture.png)
+![Architectre](docs/architecture.png)
 
 ---
 
